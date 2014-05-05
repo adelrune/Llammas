@@ -8,7 +8,8 @@
 #include <ADSR.h>
 #include <LowPassFilter.h>
 #include "pitchbendArray.h"
-
+#include "multiFilter.h"
+#include "lfoFreqArray.h"
 
 #define CONTROL_RATE 256
 
@@ -17,15 +18,23 @@ int tableChange = 0;
 
 Oscil <SAW256_NUM_CELLS, AUDIO_RATE> ncoOne(SAW256_DATA),
 ncoTwo(SAW256_DATA), ncoThree(SAW256_DATA);
-Oscil <SIN256_NUM_CELLS, CONTROL_RATE> lfo(SIN256_DATA);
-ADSR <CONTROL_RATE> adsr;
-int noteOnn = 1;
+
+Oscil <SIN256_NUM_CELLS, CONTROL_RATE> lfoOne(SIN256_DATA),
+lfoTwo(SIN256_DATA);
+
+ADSR <CONTROL_RATE> adsr_envelope;
+ADSR <CONTROL_RATE> adsr_filter;
+
+
 float lastFreq = 0;
-int noteOnBuffer[4];
+int noteBuffer[4];
 int bufferIndex = 0;
 float pbAmount = 0.0;
 float lastMidiNote = 0.0;
 LowPassFilter lpf;
+int lastLfoValues[2];
+Multifilter mf(0);
+bool lfoEffect[2][5]; //0:oscil1, 1:oscil2, 2:oscil3, 3:envelope, 4:detune
 
 void handlePitchBend(byte channel, byte lsb, byte msb) {
     
@@ -42,10 +51,10 @@ void handleNoteOn(byte channel, byte note, byte velocity) {
     }
 
     for(int i = 3; i > 0; i--) {
-        noteOnBuffer[i] = noteOnBuffer[i - 1];
+        noteBuffer[i] = noteBuffer[i - 1];
     }
 
-    noteOnBuffer[0] = note;
+    noteBuffer[0] = note;
     jouerNote((float)note);
 }
 
@@ -54,27 +63,29 @@ void jouerNote(float note) {
     lastFreq = Q16n16_to_float(Q16n16_mtof(float_to_Q16n16(totalNote)));
     ncoOne.setFreq(lastFreq);
     lastMidiNote = note;
-    adsr.noteOn();
+    adsr_filter.noteOn();
+    adsr_envelope.noteOn();
 }
 
 void handleNoteOff(byte channel, byte note, byte velocity) {
     int i = 0;
 
-    while(i < 3 && noteOnBuffer[i] != note) {
+    while(i < 3 && noteBuffer[i] != note) {
         i++;
     }
     while(i < 3) {
-        noteOnBuffer[i] = noteOnBuffer[i + 1];
+        noteBuffer[i] = noteBuffer[i + 1];
         i += 1;
     }
     if(i < 4) {
-        noteOnBuffer[3] = -1;
+        noteBuffer[3] = -1;
     }
-    if(noteOnBuffer[0] != -1) {
-        jouerNote((float)noteOnBuffer[0]);
+    if(noteBuffer[0] != -1) {
+        jouerNote((float)noteBuffer[0]);
     } else {
-        noteOnn = 0;
-        adsr.noteOff();
+    
+        adsr_filter.noteOff();
+        adsr_envelope.noteOff();
     }
 }
 
@@ -85,31 +96,63 @@ void setup() {
     ncoOne.setFreq(400);
     startMozzi(CONTROL_RATE);
     MIDI.begin();
-    lfo.setFreq(1);
+    lfoOne.setFreq(1);
     for(int i = 0; i < 3; i++) {
-        noteOnBuffer[i] = -1;
+        noteBuffer[i] = -1;
     }
-    adsr.setADLevels(255, 210);
-    adsr.setTimes(188, 345, 65000, 345);
-    adsr.setSustainLevel(255);
-    lpf.setResonance(156);
-    
+    adsr_envelope.setADLevels(255, 210);
+    adsr_envelope.setTimes(188, 345, 65000, 345);
+    adsr_envelope.setSustainLevel(255);
+    mf.setResonance(156);
+    lastLfoValues[0] = 0;
+    lastLfoValues[1] = 0;
 }
 
-int lfoNext = 0;
+int lastFilter = 0;
 void updateControl() {
-    lfoNext = lfo.next();
-    ncoTwo.setFreq(lastFreq + (lfoNext * 0.02f));
-    //version tarrée à virgule fixe.
-    //ncoThree.setFreq((float)(((Q15n0_to_Q15n16((mozziAnalogRead(5)-512))*(float_to_Q15n16(0.004))>>23)*float_to_Q15n16(lastFreq))>>23));
+    lastLfoValues[0] = lfoOne.next();
+    lastLfoValues[1] = lfoTwo.next();
+    // Oscillator detune.
+    // 
+    int filterReading = mozziAnalogRead(0)>>8;
+    if (lastFilter != filterReading ) {
+        mf.changeFilter(filterReading);
+        lastFilter = filterReading;
+    }
+    
     MIDI.read();
-    adsr.update();
-    lpf.setCutoffFreq(255 * adsr.next() >> 8);
+    adsr_envelope.update();
+    mf.setCutoffFreq(255 * adsr_envelope.next() >> 8);
 }
 
 int updateAudio() {
     //adsr.next();
-    return (int) (adsr.next()*(lpf.next((ncoOne.next() + ncoTwo.next() + ncoThree.next()) >> 2))) >> 2;
+    
+    /**
+    int osc1 = ncoOne.next();
+    int osc2 = ncoTwo.next();
+    int osc3 = ncoThree.next();
+    */
+   /** for(int i=0;i<2;i++) {
+        if(lfoEffect[i][0] {
+            osc1 = osc1*lastLfoValues[i];
+        }
+        if(lfoEffect[i][1] {
+            osc2 = osc2*lastLfoValues[i];
+        }
+        if(lfoEffect[i][2] {
+            osc3 = osc3*lastLfoValues[i];
+        }
+        if(lfoEffect[i][3] {
+            //envelope
+        }
+        if(lfoEffect[i][4] {
+            //detune
+        }
+    } */ 
+    
+    
+    return (int) (adsr_envelope.next()*(mf.next((ncoOne.next() + ncoTwo.next() + ncoThree.next()) >> 2))) >> 2;
 }
 
 void loop() {
