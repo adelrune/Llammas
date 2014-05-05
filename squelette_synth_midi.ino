@@ -1,3 +1,24 @@
+/*
+ * squelette_synth_midi.ino
+ *
+ * Copyright 2014 Guillaume Riou, Aude Forcione-Lambert & Nicolas Hurtubise.
+ *
+ * This file is part of Llammas.
+ *
+ * Llammas is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Llammas is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Llammas.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 #include <MIDI.h>
 #include <MozziGuts.h>
 #include <Oscil.h>
@@ -37,7 +58,7 @@ Multifilter mf(0);
 bool lfoEffect[2][5]; //0:oscil1, 1:oscil2, 2:oscil3, 3:envelope, 4:detune
 
 void handlePitchBend(byte channel, byte lsb, byte msb) {
-    
+
     pbAmount = pgm_read_float_near(PB_ARRAY+msb);
     jouerNote(lastMidiNote);
 }
@@ -83,7 +104,6 @@ void handleNoteOff(byte channel, byte note, byte velocity) {
     if(noteBuffer[0] != -1) {
         jouerNote((float)noteBuffer[0]);
     } else {
-    
         adsr_filter.noteOff();
         adsr_envelope.noteOff();
     }
@@ -119,7 +139,7 @@ void updateControl() {
         mf.changeFilter(filterReading);
         lastFilter = filterReading;
     }
-    
+
     MIDI.read();
     adsr_envelope.update();
     mf.setCutoffFreq(255 * adsr_envelope.next() >> 8);
@@ -127,7 +147,7 @@ void updateControl() {
 
 int updateAudio() {
     //adsr.next();
-    
+
     /**
     int osc1 = ncoOne.next();
     int osc2 = ncoTwo.next();
@@ -150,8 +170,8 @@ int updateAudio() {
             //detune
         }
     } */ 
-    
-    
+
+
     return (int) (adsr_envelope.next()*(mf.next((ncoOne.next() + ncoTwo.next() + ncoThree.next()) >> 2))) >> 2;
 }
 
