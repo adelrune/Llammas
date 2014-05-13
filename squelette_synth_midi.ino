@@ -126,6 +126,11 @@ void setup() {
     mf.setResonance(156);
     lastLfoValues[0] = 0;
     lastLfoValues[1] = 0;
+    for(int i=0; i<2; i++){
+        for(int j=0; j<5; j++){
+            lfoEffect[i][j]=false;
+        }
+    }
 }
 
 int lastFilter = 0;
