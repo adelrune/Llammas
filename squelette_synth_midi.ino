@@ -1,3 +1,24 @@
+/*
+ * squelette_synth_midi.ino
+ *
+ * Copyright 2014 Guillaume Riou, Aude Forcione-Lambert & Nicolas Hurtubise.
+ *
+ * This file is part of Llammas.
+ *
+ * Llammas is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Llammas is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Llammas.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 #include <MIDI.h>
 #include <MozziGuts.h>
 #include <Oscil.h>
@@ -39,7 +60,7 @@ bool lfoEffect[2][7]; //0:oscil1, 1:oscil2, 2:oscil3, 3:envelope, 4:cutoff, 5: d
 int lastFilter = 0;
 
 void handlePitchBend(byte channel, byte lsb, byte msb) {
-    
+
     pbAmount = pgm_read_float_near(PB_ARRAY+msb);
     jouerNote(lastMidiNote);
 }
@@ -95,7 +116,6 @@ void handleNoteOff(byte channel, byte note, byte velocity) {
     if(noteBuffer[0] != -1) {
         jouerNote((float)noteBuffer[0]);
     } else {
-    
         adsr_filter.noteOff();
         adsr_envelope.noteOff();
     }
@@ -121,6 +141,11 @@ void setup() {
     mf.setResonance(156);
     lastLfoValues[0] = 0;
     lastLfoValues[1] = 0;
+    for(int i=0; i<2; i++){
+        for(int j=0; j<5; j++){
+            lfoEffect[i][j]=false;
+        }
+    }
 }
 
 
@@ -154,6 +179,7 @@ void updateControl() {
     
     mf.setCutoffFreq(cutoff * adsr_envelope.next() >> 8);
     // Lis et traite les valeurs midi.
+
     MIDI.read();
     jouerNote(lastMidiNote);
     // Update l'adsr.
@@ -163,15 +189,17 @@ void updateControl() {
 
 int updateAudio() {
     //adsr.next();
-    
-    
-    int osc1 = nco[0].next();
-    int osc2 = nco[1].next();
-    int osc3 = /*nco[2].next()*/0;
-    
+
+
+    /**
+    int osc1 = ncoOne.next();
+    int osc2 = ncoTwo.next();
+    int osc3 = ncoThree.next();
+    */
     for(int i=0;i<2;i++) {
-        if(lfoEffect[i][0] || true) {
-            //osc1 = (osc1*lastLfoValues[i])>>7;
+        if(lfoEffect[i][0] {
+            osc1 = osc1*lastLfoValues[i];
+
         }
         if(lfoEffect[i][1] || true) {
             //osc2 = (osc2*lastLfoValues[i])>>7;
@@ -179,12 +207,7 @@ int updateAudio() {
         if(lfoEffect[i][2] || true) {
             //osc3 = (osc3*lastLfoValues[i])>>7;
         }
-        /**if(lfoEffect[i][4]) {
-            total = ((osc1+osc2+osc3)*lastLfoValues[i])>>9;
-        }
-        else {
-            total = (osc1+osc2+osc3)>>2;
-        }*/
+        
     } 
     int total = (osc1+osc2+osc3)>>2;
     
@@ -192,10 +215,10 @@ int updateAudio() {
         if(lfoEffect[i][3] || true) {
             //total = (total*lastLfoValues[i])>>7;
         }
+
     }
-    
-    
     return (int) (adsr_envelope.next()*(mf.next(total)))>>2;
+    } 
 }
 
 void loop() {
