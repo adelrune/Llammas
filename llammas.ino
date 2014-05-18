@@ -213,7 +213,7 @@ void read_and_compare(int position, int readings[4][2]) {
     int reading = 0;
 
     for(int i = 0; i < 4; i++) {
-        reading = mozziAnalogRead(i);
+        reading = mozziAnalogRead(i+1);
         readings[i][0] = reading;
         readings[i][1] = ((reading > last_reading[i]+4) || (reading < last_reading[i]-4));
         if(readings[i][1]){
