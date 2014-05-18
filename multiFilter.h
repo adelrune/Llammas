@@ -26,21 +26,29 @@
 
 class Multifilter {
   private:
+    //Current selected filter
     int filterSelection;
+    //Current filter frequency
     int freq;
+    //Current filter resonance.
     int res;
+    //Mozzi's lowpass filter.
     LowPassFilter lpf;
+    //Mozzi's multimode filter in notch mode
     StateVariable <NOTCH> nf;
+    //Mozzi's multimode filter in highpass mode
     StateVariable <HIGHPASS> hpf;
+    //Mozzi's multimode filter in bandpass mode
     StateVariable <BANDPASS> bpf;
 
   public:
-    
+    //Constructor. The type parameter is the type of the filter used at first.
     Multifilter(int type){
         filterSelection = type;
     }
     
     /**
+    *Changes the filter type and sets the new filter to the right value.
     * 0: Lowpass 1: Highpass, 2 : Bandpass, 3: Notch, 4 : Allpass.
     */
     int changeFilter(int selection) {
@@ -50,7 +58,9 @@ class Multifilter {
             setCutoffFreq(freq);
         }
     }
-
+    /**
+    *Sets the resonance of the filter. Takes care of the conversion if they are needed. 
+    */
     int setResonance(int resonance) {
         res = resonance;
         switch (filterSelection) {
@@ -58,9 +68,8 @@ class Multifilter {
             lpf.setResonance(resonance);
             break;
         case 1:
-            // Oh non, c'est trop louuurd.
-            //hpf.setResonance(map(resonance, 180, 1, 0, 255));
-            // Approximation d'un mappage de valeurs de 0 à 255 vers 20 à 147.
+           
+            // maps values from 0-255 to 147-20
             hpf.setResonance(180 - (resonance>>1) -33);
             break;
         case 2:
@@ -71,7 +80,9 @@ class Multifilter {
             break;
         }
     }
-
+    /**
+    *Sets the cutoff of the filter. Takes care of the conversion if they are needed. 
+    */
     int setCutoffFreq(int cutoff) {
         freq = cutoff;
         switch (filterSelection) {
@@ -79,7 +90,7 @@ class Multifilter {
             lpf.setCutoffFreq(cutoff);
             break;
         case 1:
-            // Approximation de mappage de valeurs de 0 à 255 vers 20 à 4100.
+            // maps values from 0-255 to 20-4100
             hpf.setCentreFreq((cutoff<<4)+20);
             break;
         case 2:
@@ -92,7 +103,9 @@ class Multifilter {
             break;
         }
     }
-
+    /**
+    *returns the signal affected by the selected filter.
+    */
     int next(int signal) {
         switch (filterSelection) {
         case 0:

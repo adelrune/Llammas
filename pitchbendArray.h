@@ -25,8 +25,7 @@
 #include "WProgram.h"
 #endif
 #include <avr/pgmspace.h>
-// La grosse ligne incomprehensible est un macro utilisé par GCC pour mettre la variable dans
-// la memoire flash du microcontroleur.
+//An array of floats declared in the ROM section of the arduino.
 const float __attribute__((section(".progmem.data"))) PB_ARRAY[] = {
 
     -1.0, -0.984375, -0.96875, -0.953125, -0.9375, -0.921875, -0.90625, -0.890625, 
