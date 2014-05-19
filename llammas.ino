@@ -1,5 +1,5 @@
 /*
- * squelette_synth_midi.ino
+ * llammas.ino
  *
  * Copyright 2014 Guillaume Riou, Aude Forcione-Lambert & Nicolas Hurtubise.
  *
